@@ -8,10 +8,10 @@ import time
 
 WIDTH, HEIGHT = 1100, 650
 DELTA = {
-    pg.K_UP: (0, -5),
-    pg.K_DOWN: (0, +5),
-    pg.K_LEFT: (-5, 0),
-    pg.K_RIGHT: (+5, 0),
+    pg.K_UP: (0, -5),  # 上方向の移動
+    pg.K_DOWN: (0, +5),  # 下方向の移動
+    pg.K_LEFT: (-5, 0),  # 左方向の移動
+    pg.K_RIGHT: (+5, 0),  # 右方向の移動
 }
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
