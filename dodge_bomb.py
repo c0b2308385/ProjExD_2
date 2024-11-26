@@ -31,16 +31,17 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
 def game_over(screen: pg.Surface) -> None:
     """
     ゲームオーバー時に画面に「Game Over」を表示し、泣いているこうかとんを描画する。
-    引数:screen - 描画するスクリーンSurface
+    引数：screen - 描画するスクリーンSurface
     """
+
     # フォント設定
     font = pg.font.Font(None, 80)
     text = font.render("GAME OVER", True, (255, 255, 255))
     # 泣いているこうかとん画像（8.png）を読み込む
     crying_kk_img = pg.transform.rotozoom(pg.image.load("fig/8.png"), 0, 0.9)
     # 左右にこうかとんを表示する座標
-    left_cry_img = (WIDTH // 4 - crying_kk_img.get_width() // 2, HEIGHT // 2 - crying_kk_img.get_height() // 2)
-    right_cry_img = (3 * WIDTH // 4 - crying_kk_img.get_width() // 2, HEIGHT // 2 - crying_kk_img.get_height() // 2)
+    left_pos = (WIDTH // 4 - crying_kk_img.get_width() // 2, HEIGHT // 2 - crying_kk_img.get_height() // 2)
+    right_pos = (3 * WIDTH // 4 - crying_kk_img.get_width() // 2, HEIGHT // 2 - crying_kk_img.get_height() // 2)
     # ブラックアウトのための半透明Surface
     blackout = pg.Surface((WIDTH, HEIGHT))
     blackout.fill((0, 0, 0))
@@ -48,8 +49,8 @@ def game_over(screen: pg.Surface) -> None:
     # 半透明の黒い四角を画面に描画（ブラックアウト）
     screen.blit(blackout, (0, 0))
     # ブラックアウト後にこうかとんとテキストを描画
-    screen.blit(crying_kk_img, left_cry_img)
-    screen.blit(crying_kk_img, right_cry_img)
+    screen.blit(crying_kk_img, left_pos)
+    screen.blit(crying_kk_img, right_pos)
     screen.blit(text, (WIDTH // 2 - 150, HEIGHT // 2 - 40))
 
     pg.display.update()  # 画面を更新
@@ -70,17 +71,36 @@ def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
         bb_imgs.append(bb_img)
     return bb_imgs, accs
 
+def get_kk_img(sum_mv: tuple[int, int]) -> pg.Surface:
+    """
+    移動量の合計値タプルに対応する向きの画像Surfaceを返す
+    """
+    kk_images = {
+    (0, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 1),      # 上
+    (0, 5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 1),     # 下
+    (-5, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 1),      # 左
+    (5, 0): pg.transform.flip(pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 1), True, False),  # 右（反転）
+    (-5, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), -45, 1),    # 左上
+    (5, -5): pg.transform.flip(pg.transform.rotozoom(pg.image.load("fig/3.png"), -45, 1), True, False),  # 右上（反転）
+    (-5, 5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 45, 1),    # 左下
+    (5, 5): pg.transform.flip(pg.transform.rotozoom(pg.image.load("fig/3.png"), 45, 1), True, False),  # 右下（反転）
+}
+    # sum_mvが指定されていない場合のデフォルト（上向き）
+    return kk_images.get(sum_mv, pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 1))
+
+
+
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-    bg_img = pg.image.load("fig/pg_bg.jpg")    
-    kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
+    bg_img = pg.image.load("fig/pg_bg.jpg")
+    
+    # 初期こうかとん画像
+    kk_img = get_kk_img((0, 0))
     kk_rct = kk_img.get_rect()
     kk_rct.center = 300, 200
     
-    # 爆弾の画像と加速度リストを初期化
     bb_imgs, bb_accs = init_bb_imgs()
-    
     bb_rct = bb_imgs[0].get_rect()
     bb_rct.center = random.randint(0, WIDTH), random.randint(0, HEIGHT)
     
@@ -90,53 +110,48 @@ def main():
 
     while True:
         for event in pg.event.get():
-            if event.type == pg.QUIT: 
+            if event.type == pg.QUIT:
                 return
-        screen.blit(bg_img, [0, 0]) 
+
+        screen.blit(bg_img, [0, 0])
         
         if kk_rct.colliderect(bb_rct):  # こうかとんと爆弾が重なっていたら
             game_over(screen)
             return 
-
+        
         key_lst = pg.key.get_pressed()
         sum_mv = [0, 0]
         for key, tpl in DELTA.items():
             if key_lst[key]:
                 sum_mv[0] += tpl[0]
                 sum_mv[1] += tpl[1]
+
+        # 移動に応じて画像を変更
+        kk_img = get_kk_img(tuple(sum_mv))
         kk_rct.move_ip(sum_mv)
         
-        # こうかとんが画面外なら、元の場所に戻す
         if check_bound(kk_rct) != (True, True):
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])
+
         screen.blit(kk_img, kk_rct)
         
-                # 爆弾の拡大と加速を適用
+        # 爆弾の拡大と加速を適用
         idx = min(tmr // 500, 9)
-        current_bb_img = bb_imgs[idx]  # 現在の爆弾画像を選択
-        
-        # サイズ変更後の中心位置を維持
-        center = bb_rct.center  
-        bb_rct = current_bb_img.get_rect(center=center)  # 新しいサイズに合わせてRectを更新
-        
-        # 爆弾を動かす
+        current_bb_img = bb_imgs[idx]
+        center = bb_rct.center
+        bb_rct = current_bb_img.get_rect(center=center)
         bb_rct.move_ip(vx, vy)
         yoko, tate = check_bound(bb_rct)
-        if not yoko:  # 横にはみ出る
+        if not yoko:
             vx *= -1
-        if not tate:  # 縦にはみ出る
+        if not tate:
             vy *= -1
 
-        # 現在の爆弾画像を描画
         screen.blit(current_bb_img, bb_rct)
 
-        
-        screen.blit(bb_imgs[idx], bb_rct)
         pg.display.update()
         tmr += 1
         clock.tick(50)
-
-
 
 if __name__ == "__main__":
     pg.init()
