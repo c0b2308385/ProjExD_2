@@ -29,6 +29,11 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
     return yoko, tate
 
 def game_over(screen: pg.Surface) -> None:
+    """
+    引数で与えられたRectが画面の中か外か判定
+    引数：こうかとんRect or 爆弾Rect
+    戻り値：真理値タプル（横, 縦）/ 画面内True, 画面外False
+    """
     # フォント設定
     font = pg.font.Font(None, 80)
     text = font.render("GAME OVER", True, (255, 255, 255))
