@@ -28,7 +28,7 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
         tate = False
     return yoko, tate
 
-def game_over(screen):
+def game_over(screen: pg.Surface) -> None:
     # フォント設定
     font = pg.font.Font(None, 80)
     text = font.render("GAME OVER", True, (255, 255, 255))
@@ -50,6 +50,10 @@ def game_over(screen):
     pg.display.update()  # 画面を更新
     # 5秒待機
     time.sleep(5)
+
+
+
+    
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
